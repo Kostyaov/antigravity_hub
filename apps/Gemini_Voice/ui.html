@@ -84,7 +84,31 @@
     .template-bar {
         display: flex;
         gap: 10px;
-        flex-wrap: wrap;
+        width: 100%;
+    }
+
+    .style-btn {
+        flex: 1;
+        background: #000;
+        color: var(--primary);
+        border: 1px solid var(--primary);
+        padding: 10px 5px;
+        font-size: 0.75rem;
+        font-family: 'JetBrains Mono', monospace;
+        cursor: pointer;
+        text-align: center;
+        text-transform: uppercase;
+        transition: all 0.3s ease;
+    }
+
+    .style-btn:hover {
+        background: rgba(255, 140, 0, 0.2);
+    }
+
+    .style-btn.active {
+        background: var(--primary);
+        color: #000;
+        box-shadow: 0 0 10px var(--primary);
     }
 
     /* Loading & Results */
@@ -164,11 +188,11 @@
             <textarea id="context" class="voice-textarea" style="height: 50px; font-size: 0.8rem;" placeholder="E.G. PREMIUM COMMERCIAL. DYNAMIC PACING..."></textarea>
         </div>
         <div class="template-bar">
-            <button class="btn btn-small" onclick="window.voiceEngine.setTemplate('commercial')">REKLAMA</button>
-            <button class="btn btn-small" onclick="window.voiceEngine.setTemplate('story')">STORYTELLER</button>
-            <button class="btn btn-small" onclick="window.voiceEngine.setTemplate('news')">NEWS ANCHOR</button>
-            <button class="btn btn-small" onclick="window.voiceEngine.setTemplate('emotive')">EMOTIONAL</button>
-            <button class="btn btn-small btn-danger" onclick="window.voiceEngine.setTemplate('')">CLEAR</button>
+            <button class="style-btn" onclick="window.voiceEngine.setTemplate('commercial', this)">REKLAMA</button>
+            <button class="style-btn" onclick="window.voiceEngine.setTemplate('story', this)">STORYTELLER</button>
+            <button class="style-btn" onclick="window.voiceEngine.setTemplate('news', this)">NEWS ANCHOR</button>
+            <button class="style-btn" onclick="window.voiceEngine.setTemplate('emotive', this)">EMOTIONAL</button>
+            <button class="style-btn" onclick="window.voiceEngine.setTemplate('', this)">CLEAR</button>
         </div>
     </div>
 
@@ -214,8 +238,18 @@
             'emotive': "Highly emotive and expressive. Dramatic pauses."
         },
 
-        setTemplate: function(key) {
+        setTemplate: function(key, btnElement) {
             document.getElementById('context').value = this.templates[key] || "";
+            
+            // Remove active class from all style buttons
+            document.querySelectorAll('.style-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add active class to clicked button if it's not the CLEAR button
+            if (btnElement && key !== '') {
+                btnElement.classList.add('active');
+            }
         },
 
         updateUI: function() {

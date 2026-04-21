@@ -6,7 +6,7 @@
 1. **WEB-DLP** (YouTube Downloader & Audio Extractor) — Завантаження аудіо та відео контенту за допомогою `yt-dlp` та `ffmpeg`.
 2. **MY RSS** (YouTube & RSS Aggregator) — Ваш персональний агрегатор новин та YouTube-каналів.
 3. **PDF Magic** — Інструмент для миттєвого очищення PDF файлів від зайвого фону, тіней (ідеально для друку).
-4. **Gemini Voice** — Просунута система Text-to-Speech синтезу з підтримкою **Edge-TTS** (на базі Microsoft) та AI-голосів від **Gemini 3.1 Flash**. Підтримує "AI Steering" для налаштування тональності голосу (Context).
+4. **Gemini Voice** — Просунута система Text-to-Speech синтезу з підтримкою **Edge-TTS** (на базі Microsoft) та AI-голосів від **Gemini 3.1 Flash**. Підтримує "AI Steering" для налаштування тональності голосу (Context) через інтерактивний Cyber-HUD інтерфейс швидкого вибору емоцій (інверсійні стилізовані кнопки).
 
 ---
 
