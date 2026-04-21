@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Web-DLP • Панель швидкого запуску</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #6366f1;
+      --text: #f8fafc;
+      --success: #10b981;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 2.5rem;
+      letter-spacing: -1px;
+    }
+
+    p {
+      opacity: 0.8;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    .method {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 24px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      text-align: left;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .method h3 {
+      margin-top: 0;
+      color: var(--accent);
+      font-size: 1.1rem;
+    }
+
+    .copy-area {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    input {
+      flex: 1;
+      background: #000;
+      border: 1px solid #334155;
+      color: var(--success);
+      padding: 10px;
+      border-radius: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    .footer {
+      margin-top: 32px;
+      font-size: 0.85rem;
+      opacity: 0.5;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>Web-DLP Start</h1>
+    <p>Браузери не можуть відкривати Термінал самостійно, але я підготував команду, яка сама "перейде" в потрібну папку.
+    </p>
+
+    <!-- Method 1: Improved Terminal -->
+    <div class="method">
+      <h3>Спосіб 1: Через Термінал (найкращий)</h3>
+      <p style="font-size: 0.85rem; margin-bottom: 8px;">Ця команда сама знайде папку проекту та запустить сервер:</p>
+      <div class="copy-area">
+        <input type="text" id="cmd" value="завантаження шляху..." readonly>
+        <button onclick="copyCmd()">Copy</button>
+      </div>
+      <p style="font-size: 0.82rem; margin-top: 12px; color: #94a3b8;">Відкрий Термінал (Cmd+Space -> Terminal), встав і
+        натисни Enter.</p>
+    </div>
+
+    <!-- Method 2 -->
+    <div class="method">
+      <h3>Спосіб 2: Через Finder</h3>
+      <p style="font-size: 0.85rem; margin-bottom: 0;">Відкрий папку проєкту у Finder та клацни двічі по:
+        <br><code>start-server-mac.command</code></p>
+    </div>
+
+    <p style="font-size: 0.9rem; margin-top: 24px;">URL інтерфейсу: <a href="http://localhost:8080"
+        target="_blank"><b>http://localhost:8080</b></a></p>
+
+  </div>
+
+  <script>
+    // Автоматично визначаємо шлях до папки з файлом
+    function updatePath() {
+      let path = window.location.pathname;
+      // Декодуємо спецсимволи (пробіли тощо)
+      path = decodeURI(path);
+      // Видаляємо назву самого html файлу
+      path = path.substring(0, path.lastIndexOf('/'));
+
+      // Якщо шлях починається з /C:/ (для Windows в браузері)
+      if (path.startsWith('/')) {
+        // macOS шлях залишається як є
+      }
+
+      const input = document.getElementById("cmd");
+      input.value = `cd "${path}" && bash start-server-mac.command`;
+    }
+
+    function copyCmd() {
+      const el = document.getElementById("cmd");
+      el.select();
+      document.execCommand("copy");
+      alert("Команду скопійовано! Просто встав її в будь-яке вікно Терміналу.");
+    }
+
+    // Запуск визначення шляху
+    updatePath();
+  </script>
+</body>
+
+</html>

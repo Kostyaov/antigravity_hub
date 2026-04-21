@@ -1,0 +1,334 @@
+<div style="display: flex; justify-content: flex-end; margin-bottom: 20px; align-items: center;">
+    <button id="dlp-update-btn" class="btn" style="width: auto; padding: 8px 15px; font-size: 0.8rem; background: rgba(255, 140, 0, 0.2); border-color: var(--hud-border);">Yt-dlp Update</button>
+</div>
+
+<!-- ============================================== -->
+<!-- РОЗДІЛ ЗАВАНТАЖЕННЯ (Рядок 1)                -->
+<!-- ============================================== -->
+<div style="display: flex; gap: 15px; justify-content: space-between; align-items: stretch; flex-wrap: wrap; margin-bottom: 30px;">
+    
+    <!-- Поле URL -->
+    <div style="flex-grow: 1; min-width: 250px;">
+        <input type="text" id="dlp-url" placeholder="Paste YouTube link..." style="height: 100%; border: 1px solid var(--hud-border); border-radius: 2px; padding: 0 15px; background: rgba(20, 20, 20, 0.8); color: var(--text); outline: none; transition: border-color 0.3s; width: 100%; font-family: 'JetBrains Mono', monospace;">
+    </div>
+
+    <!-- Формат -->
+    <div style="width: 150px;">
+        <select id="dlp-format" class="ag-select">
+            <option value="mp3">mp3</option>
+            <option value="original_audio">Original Audio</option>
+            <option value="480">480p</option>
+            <option value="720">720p</option>
+            <option value="1080" selected>1080p</option>
+            <option value="2k">2k</option>
+            <option value="MAX">MAX</option>
+        </select>
+    </div>
+
+    <!-- Чекбокси -->
+    <div style="display: flex; flex-direction: column; justify-content: center; gap: 5px; color: var(--text-dim); font-size: 0.85rem;">
+        <label id="audioLabel" style="cursor: pointer; margin:0;"><input type="checkbox" id="dlp-audio" checked style="accent-color: var(--primary);"> Audio</label>
+        <label id="subtitlesLabel" style="cursor: pointer; margin:0;"><input type="checkbox" id="dlp-subtitles" style="accent-color: var(--primary);"> Subtitles</label>
+    </div>
+
+    <!-- Кнопка Download -->
+    <div>
+        <button id="dlp-submit" class="btn" style="height: 100%; width: 140px;">Save</button>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- РОЗДІЛ FFMPEG REPLACE (Рядок 2)              -->
+<!-- ============================================== -->
+<div style="margin-top: 30px; border-top: 2px solid var(--hud-border); padding-top: 30px; margin-bottom: 30px;">
+    <div id="ffmpeg-row" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: nowrap; position: relative; width: 100%;">
+        
+        <style>
+            /* Make dropdown options pop out and span the whole row */
+            #hud-dlp-video-picker, #hud-dlp-audio-picker { position: static !important; }
+            #hud-dlp-video-picker .hud-dropdown-options, 
+            #hud-dlp-audio-picker .hud-dropdown-options { 
+                left: 0 !important; 
+                right: 0 !important; 
+                width: auto !important; 
+                z-index: 2000;
+            }
+        </style>
+        
+        <div style="flex: 1; min-width: 0;">
+            <label style="color: var(--primary); font-size: 0.75rem; text-transform: uppercase;">Video</label>
+            <select id="dlp-video-picker" class="ag-select">
+                <option value="">Select Video from Downloads...</option>
+            </select>
+        </div>
+
+        <div style="flex: 1; min-width: 0;">
+            <label style="color: var(--primary); font-size: 0.75rem; text-transform: uppercase;">Audio</label>
+            <select id="dlp-audio-picker" class="ag-select">
+                <option value="">Select Audio to Replace With...</option>
+            </select>
+        </div>
+
+        <!-- Кнопка Refresh (Стилізована як квадрат) -->
+        <button id="dlp-refresh-btn" class="btn" style="width: 48px; padding: 0; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;" title="Refresh Files">⟳</button>
+        
+        <!-- Кнопка Replace -->
+        <button id="dlp-replace-btn" class="btn" style="width: auto; height: 48px; flex-shrink: 0;">Replace</button>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- ПРОГРЕС-БАР                                   -->
+<!-- ============================================== -->
+<div id="dlp-progress-container" style="display: none; border: 1px solid var(--hud-border); padding: 15px; background: rgba(0,0,0,0.5); margin-bottom: 15px;">
+    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 5px;">
+        <span id="dlp-speed">Speed: 0MiB/s</span>
+        <span id="dlp-eta">ETA: 00:00</span>
+    </div>
+    <div style="width: 100%; height: 5px; background: rgba(255,140,0, 0.1); position: relative;">
+        <div id="dlp-progress-bar" style="height: 100%; width: 0%; background: var(--primary); box-shadow: 0 0 10px var(--primary-glow); transition: width 0.3s;"></div>
+    </div>
+    <div id="dlp-progress-txt" style="text-align: center; font-size: 0.8rem; margin-top: 5px; color: var(--primary);">0%</div>
+</div>
+
+<!-- ============================================== -->
+<!-- ТЕРМІНАЛ (Console Output)                      -->
+<!-- ============================================== -->
+<div class="console-wrapper" style="margin-bottom: 20px;">
+    <div style="color: var(--primary); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; border-bottom: 1px solid rgba(255,140,0,0.2); padding-bottom: 5px;">Console Output</div>
+    <div id="dlp-console" style="background: rgba(5,5,5,0.9); border: 1px solid var(--hud-border); height: 200px; overflow-y: auto; padding: 15px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #a3a3a3; box-shadow: inset 0 0 20px rgba(0,0,0,1);"></div>
+</div>
+
+<!-- ============================================== -->
+<!-- БЛОК ЗАВЕРШЕННЯ РОБОТИ                        -->
+<!-- ============================================== -->
+<div id="dlp-success-pane" style="display: none; text-align: center; margin-top: 20px; animation: fadeIn 0.4s ease; padding: 20px; border: 1px solid #0f0; background: rgba(0, 255, 0, 0.05);">
+    <p style="color: #0f0; margin-bottom: 15px; font-weight: bold; letter-spacing: 2px;">[ PROCESS COMPLETE ]</p>
+    <button id="dlp-open-folder" class="btn" style="background: rgba(0, 255, 0, 0.2); border-color: #0f0; color: #0f0; width: auto; font-size: 0.9rem;">Open Downloads Folder</button>
+</div>
+
+<script>
+    // Ініціалізація WebSocket для отримання прогресу завантаження
+    let dlpWs;
+    const dlpConsole = document.getElementById('dlp-console');
+    const dlpProgressContainer = document.getElementById('dlp-progress-container');
+    const dlpProgressBar = document.getElementById('dlp-progress-bar');
+    const dlpProgressTxt = document.getElementById('dlp-progress-txt');
+    const dlpSpeed = document.getElementById('dlp-speed');
+    const dlpEta = document.getElementById('dlp-eta');
+    const dlpSuccessPane = document.getElementById('dlp-success-pane');
+
+    function dlpAppendLog(message) {
+        const div = document.createElement('div');
+        div.style.marginBottom = '6px';
+        div.style.lineHeight = '1.4';
+        div.textContent = `> ${message}`;
+        dlpConsole.appendChild(div);
+        dlpConsole.scrollTop = dlpConsole.scrollHeight;
+    }
+
+    function connectDlpWs() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        dlpWs = new WebSocket(`${protocol}//${window.location.host}/api/dlp/ws`);
+
+        dlpWs.onmessage = function(event) {
+            const msg = JSON.parse(event.data);
+            
+            if (msg.type === 'log') {
+                dlpAppendLog(msg.data.message);
+            } 
+            else if (msg.type === 'progress') {
+                dlpProgressContainer.style.display = 'block';
+                let percent = msg.data.percent || '0';
+                percent = percent.replace(/\x1b\[.*?m/g, '').trim();
+                const numPercent = parseFloat(percent.replace('%', ''));
+                if (!isNaN(numPercent)) {
+                    dlpProgressBar.style.width = `${numPercent}%`;
+                    dlpProgressTxt.textContent = `${numPercent.toFixed(1)}%`;
+                } else {
+                    dlpProgressBar.style.width = '100%';
+                    dlpProgressTxt.textContent = percent;
+                }
+                dlpSpeed.textContent = `Speed: ${msg.data.speed}`;
+                dlpEta.textContent = `ETA: ${msg.data.eta}`;
+            } 
+            else if (msg.type === 'finished') {
+                dlpAppendLog(msg.data.message);
+                dlpSuccessPane.style.display = 'block';
+                resetDlpUI();
+                dlpLoadFiles(); // Auto-refresh dropdowns
+            } 
+            else if (msg.type === 'error') {
+                dlpAppendLog(`[ERROR] ${msg.data.message}`);
+                dlpConsole.lastChild.style.color = '#ef4444';
+                resetDlpUI();
+            }
+        };
+
+        dlpWs.onclose = () => setTimeout(connectDlpWs, 3000);
+    }
+    connectDlpWs();
+
+    function resetDlpUI() {
+        const btn = document.getElementById('dlp-submit');
+        btn.disabled = false;
+        btn.textContent = 'Save';
+        document.getElementById('dlp-url').disabled = false;
+        document.getElementById('dlp-replace-btn').disabled = false;
+    }
+
+    // Handlers
+    document.getElementById('dlp-submit').addEventListener('click', async () => {
+        const url = document.getElementById('dlp-url').value;
+        const formatSelect = document.getElementById('dlp-format');
+        const includeAudio = document.getElementById('dlp-audio').checked;
+        const includeSubtitles = document.getElementById('dlp-subtitles').checked;
+        const submitBtn = document.getElementById('dlp-submit');
+
+        if (!url.trim()) return alert('Введіть URL відео!');
+        
+        dlpConsole.innerHTML = '';
+        dlpProgressContainer.style.display = 'none';
+        dlpSuccessPane.style.display = 'none';
+        dlpProgressBar.style.width = '0%';
+        dlpProgressTxt.textContent = '0%';
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Downloading...';
+
+        try {
+            const response = await fetch('/api/dlp/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    url: url.trim(), 
+                    format: formatSelect.value, 
+                    include_audio: includeAudio, 
+                    include_subtitles: includeSubtitles 
+                })
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                dlpAppendLog(`[ERROR] Download failed to start: ${data.detail || ''}`);
+                resetDlpUI();
+            } else {
+                dlpAppendLog(`[SYSTEM] Sent download request for: ${url.trim()}`);
+            }
+        } catch (error) {
+            dlpAppendLog(`[ERROR] ${error.message}`);
+            resetDlpUI();
+        } 
+    });
+
+    document.getElementById('dlp-update-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('dlp-update-btn');
+        try {
+            dlpConsole.innerHTML = '';
+            dlpAppendLog('[SYSTEM] Sending yt-dlp update request...');
+            btn.disabled = true;
+            await fetch('/api/dlp/update', { method: 'POST' });
+        } catch (e) {
+            dlpAppendLog(`[ERROR] ${e.message}`);
+        } finally {
+            setTimeout(() => btn.disabled = false, 10000);
+        }
+    });
+
+    document.getElementById('dlp-open-folder').addEventListener('click', async () => {
+        try { await fetch('/api/dlp/open_folder'); } catch (e) { console.error(e); }
+    });
+
+    // FFMPEG Editor Logic
+    async function dlpLoadFiles() {
+        try {
+            const response = await fetch('/api/dlp/files_list');
+            const data = await response.json();
+            
+            const p1 = document.getElementById('dlp-video-picker');
+            const p2 = document.getElementById('dlp-audio-picker');
+            
+            // Filter files by extension
+            const videoExts = ['mp4', 'mkv', 'avi', 'webm', 'mov'];
+            const audioExts = ['mp3', 'm4a', 'wav', 'ogg', 'flac'];
+            
+            const videoFiles = data.files.filter(f => videoExts.some(ext => f.toLowerCase().endsWith('.' + ext)));
+            const audioFiles = data.files.filter(f => audioExts.some(ext => f.toLowerCase().endsWith('.' + ext)));
+
+            const videoOptions = '<option value="">Select Video from Downloads...</option>' + 
+                            videoFiles.map(f => `<option value="${f}">${f}</option>`).join('');
+            
+            const audioOptions = '<option value="">Select Audio from Downloads...</option>' + 
+                            audioFiles.map(f => `<option value="${f}">${f}</option>`).join('');
+            
+            p1.innerHTML = videoOptions;
+            p2.innerHTML = audioOptions;
+            
+            // Delete old auto-themed HUDs & Re-init
+            const hud1 = document.getElementById('hud-dlp-video-picker');
+            const hud2 = document.getElementById('hud-dlp-audio-picker');
+            if (hud1) hud1.remove();
+            if (hud2) hud2.remove();
+            
+            p1.dataset.hudInitialized = ""; p1.style.display = '';
+            p2.dataset.hudInitialized = ""; p2.style.display = '';
+            
+            if (window.agEngine) window.agEngine.autoTheme();
+        } catch (e) {
+            console.error('Failed to load files:', e);
+        }
+    }
+
+    document.getElementById('dlp-refresh-btn').addEventListener('click', dlpLoadFiles);
+
+    document.getElementById('dlp-replace-btn').addEventListener('click', async () => {
+        const video = document.getElementById('dlp-video-picker').value;
+        const audio = document.getElementById('dlp-audio-picker').value;
+        const btn = document.getElementById('dlp-replace-btn');
+        if (!video || !audio) return alert('Select both File 1 (Video) and File 2 (Audio)');
+        
+        dlpConsole.innerHTML = '';
+        dlpAppendLog(`[SYSTEM] Requesting Audio Replace for: \n  Video: ${video} \n  Audio: ${audio}`);
+        btn.disabled = true;
+        
+        // Сховати панель успіху та скинути прогрес перед новим завданням
+        dlpSuccessPane.style.display = 'none';
+        dlpProgressContainer.style.display = 'none';
+        dlpProgressBar.style.width = '0%';
+        dlpProgressTxt.textContent = '0%';
+        
+        try {
+            const response = await fetch('/api/dlp/ffmpeg/replace', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ video_path: video, audio_path: audio })
+            });
+            if (!response.ok) throw new Error('Failed to start FFMPEG Replace Audio');
+            dlpAppendLog(`[SYSTEM] Background replace process started.`);
+        } catch (error) {
+            dlpAppendLog(`[ERROR] ${error.message}`);
+            btn.disabled = false;
+        }
+    });
+
+    // Disable Audio checkbox conditionally just like the original logic
+    document.addEventListener('hud-change', (e) => {
+        if (e.detail.id === 'hud-dlp-format') {
+            const val = e.detail.value;
+            const label = document.getElementById('audioLabel');
+            const box = document.getElementById('dlp-audio');
+            if (val === 'mp3' || val === 'original_audio') {
+                box.checked = false;
+                box.disabled = true;
+                label.style.opacity = '0.5';
+            } else {
+                box.checked = true;
+                box.disabled = false;
+                label.style.opacity = '1';
+            }
+        }
+    });
+
+    // Initial Load
+    dlpLoadFiles();
+</script>

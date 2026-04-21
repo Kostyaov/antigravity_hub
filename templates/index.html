@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Base styles Engine -->
+    <link rel="stylesheet" href="/static/css/antigravity.css">
+</head>
+<body>
+
+    <div class="header">
+        <h1>Antigravity Hub</h1>
+        <div class="status">System: <span>ONLINE</span></div>
+    </div>
+
+    <div class="hub-container">
+        <!-- Tab Navigation (Dynamic) -->
+        <div class="tabs" id="tabs-container">
+            {% for plugin in plugins %}
+                <button class="tab-btn {% if loop.first %}active{% endif %}" data-target="tab-{{ plugin.id }}">
+                    {{ plugin.name }}
+                </button>
+            {% endfor %}
+        </div>
+
+        <!-- Modules Rendering (Dynamic) -->
+        {% for plugin in plugins %}
+            <div id="tab-{{ plugin.id }}" class="tab-content {% if loop.first %}active{% endif %}">
+                <div class="module-header-tag">[ {{ plugin.id | upper }} ]</div>
+                <h2>{{ plugin.name }}</h2>
+                
+                <!-- RAW UI HTML from plugin -->
+                <div class="plugin-ui-container">
+                    {{ plugin.html | safe }}
+                </div>
+
+                <!-- Custom Script from plugin if provided -->
+                {% if plugin.js_script %}
+                <script>
+                    (function() {
+                        // Scope plugin scripts to prevent collisions
+                        {{ plugin.js_script | safe }}
+                    })();
+                </script>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Core Autotheme Logic -->
+    <script src="/static/js/antigravity.js"></script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<style>
+    .voice-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        color: var(--text);
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .voice-section {
+        background: rgba(255, 140, 0, 0.02);
+        border: 1px solid var(--hud-border);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    /* Terminal Input Styling */
+    .voice-terminal {
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid var(--hud-border);
+        padding: 15px;
+        position: relative;
+    }
+
+    .voice-terminal::before {
+        content: "[ INPUT_TERMINAL ]";
+        position: absolute;
+        top: -10px;
+        left: 15px;
+        background: #000;
+        padding: 0 10px;
+        font-size: 0.6rem;
+        color: var(--primary);
+        letter-spacing: 2px;
+    }
+
+    .voice-textarea {
+        width: 100%;
+        height: 150px;
+        background: transparent;
+        border: none;
+        color: var(--primary);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+        outline: none;
+        resize: vertical;
+        line-height: 1.5;
+    }
+
+    .voice-textarea::placeholder {
+        color: rgba(255, 140, 0, 0.2);
+    }
+
+    /* Control Rows */
+    .voice-controls-row {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .voice-field {
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .voice-label {
+        font-size: 0.7rem;
+        color: var(--primary);
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        display: block;
+        letter-spacing: 1px;
+    }
+
+    /* AI Steering Section */
+    #contextSection {
+        animation: fadeIn 0.4s ease;
+    }
+
+    .template-bar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    /* Loading & Results */
+    #voice-status-bar {
+        height: 4px;
+        background: rgba(255, 140, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+        display: none;
+    }
+
+    #voice-status-fill {
+        height: 100%;
+        background: var(--primary);
+        width: 0%;
+        box-shadow: 0 0 10px var(--primary);
+        transition: width 0.3s;
+    }
+
+    .voice-result {
+        display: none;
+        padding: 20px;
+        background: rgba(255, 140, 0, 0.05);
+        border: 1px solid var(--primary);
+        text-align: center;
+    }
+
+    audio {
+        width: 100%;
+        filter: invert(100%) hue-rotate(150deg); /* Style native audio player to match theme */
+        margin-top: 10px;
+    }
+
+    .voice-hint {
+        font-size: 0.65rem;
+        color: var(--text-dim);
+        line-height: 1.4;
+        font-family: 'JetBrains Mono', monospace;
+    }
+</style>
+
+<div class="voice-container">
+    <!-- STEP 1: TEXT INPUT -->
+    <div class="voice-section">
+        <div class="voice-terminal">
+            <textarea id="text" class="voice-textarea" placeholder="ENTER TEXT FOR SYNTHESIS..."></textarea>
+        </div>
+        <div class="voice-hint">
+            💡 TIP: USE UPPERCASE FOR ACCENTS (e.g., замок vs замОк). ADD TAGS LIKE [excited], [whispers], [laughs] FOR EMOTION.
+        </div>
+    </div>
+
+    <!-- STEP 2: METHOD & VOICE -->
+    <div class="voice-section">
+        <div class="voice-controls-row">
+            <div class="voice-field">
+                <span class="voice-label">Synthesis Method</span>
+                <select id="modelDropdown" class="ag-select">
+                    <option value="gtts" selected>EDGE TTS (STABLE / HIGH QUALITY)</option>
+                    <option value="gemini-3.1">GEMINI 3.1 FLASH (AI PREMIUM)</option>
+                </select>
+            </div>
+            <div class="voice-field">
+                <span class="voice-label">Voice Selection</span>
+                <select id="voiceDropdown" class="ag-select">
+                    <option value="male">MALE (OSTAP - ENERGETIC)</option>
+                    <option value="female">FEMALE (POLINA - CALM)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 3: AI STEERING (DYNAMIC) -->
+    <div id="contextSection" class="voice-section" style="display: none;">
+        <span class="voice-label">AI Steering Context (Style)</span>
+        <div class="voice-terminal" style="margin-bottom: 10px; height: 80px;">
+            <textarea id="context" class="voice-textarea" style="height: 50px; font-size: 0.8rem;" placeholder="E.G. PREMIUM COMMERCIAL. DYNAMIC PACING..."></textarea>
+        </div>
+        <div class="template-bar">
+            <button class="btn btn-small" onclick="window.voiceEngine.setTemplate('commercial')">REKLAMA</button>
+            <button class="btn btn-small" onclick="window.voiceEngine.setTemplate('story')">STORYTELLER</button>
+            <button class="btn btn-small" onclick="window.voiceEngine.setTemplate('news')">NEWS ANCHOR</button>
+            <button class="btn btn-small" onclick="window.voiceEngine.setTemplate('emotive')">EMOTIONAL</button>
+            <button class="btn btn-small btn-danger" onclick="window.voiceEngine.setTemplate('')">CLEAR</button>
+        </div>
+    </div>
+
+    <!-- ACTION BUTTON -->
+    <div class="voice-section" style="border: none; background: transparent; align-items: center; padding: 0;">
+        <button id="voice-submit-btn" class="btn" style="padding: 15px 50px; width: 100%; font-size: 1rem;">🚀 SYNTHESIZE AUDIO</button>
+    </div>
+
+    <!-- STATUS & PROGRESS -->
+    <div id="voice-progress-container" class="voice-section" style="display: none; gap: 8px;">
+        <div id="voice-status-bar"><div id="voice-status-fill"></div></div>
+        <div id="voice-status-text" style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--primary);">PROCESSING...</div>
+    </div>
+
+    <!-- RESULT -->
+    <div id="voice-result-area" class="voice-section voice-result">
+        <span class="voice-label" style="text-align: center;">SYNTHESIS COMPLETE</span>
+        <audio id="audioPlayer" controls></audio>
+    </div>
+</div>
+
+<script>
+    // Voice Engine Scoped Logic
+    window.voiceEngine = {
+        edgeVoices: [
+            { value: "male", text: "MALE (OSTAP - ENERGETIC)" },
+            { value: "female", text: "FEMALE (POLINA - CALM)" }
+        ],
+        geminiVoices: [
+            { value: "Charon", text: "CHARON (MALE / CALM)" },
+            { value: "Puck", text: "PUCK (MALE / ENERGETIC)" },
+            { value: "Fenrir", text: "FENRIR (MALE / EMOTIONAL)" },
+            { value: "Enceladus", text: "ENCELADUS (MALE / DEEP)" },
+            { value: "Aoede", text: "AOEDE (FEMALE / SOFT)" },
+            { value: "Kore", text: "KORE (FEMALE / FIRM)" },
+            { value: "Leda", text: "LEDA (FEMALE / YOUTH)" },
+            { value: "Algieba", text: "ALGIEBA (MALE / PLEASANT)" }
+        ],
+        templates: {
+            'commercial': "Premium commercial. Dynamic pacing.",
+            'story': "Calm storyteller. Warm, melodic tone w/ pauses.",
+            'news': "Professional news anchor. Clear articulation, fast-paced.",
+            'emotive': "Highly emotive and expressive. Dramatic pauses."
+        },
+
+        setTemplate: function(key) {
+            document.getElementById('context').value = this.templates[key] || "";
+        },
+
+        updateUI: function() {
+            const modelSelect = document.getElementById('modelDropdown');
+            const selectedModel = modelSelect.value;
+            const voices = selectedModel === 'gtts' ? this.edgeVoices : this.geminiVoices;
+            
+            const contextSection = document.getElementById('contextSection');
+            contextSection.style.display = (selectedModel === 'gtts') ? 'none' : 'flex';
+
+            const voiceSelect = document.getElementById('voiceDropdown');
+            voiceSelect.innerHTML = '';
+            voices.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.value;
+                opt.text = v.text;
+                voiceSelect.appendChild(opt);
+            });
+
+            // Re-trigger HUD elements
+            const hudVoice = document.getElementById('hud-voiceDropdown');
+            if (hudVoice) {
+                hudVoice.remove();
+                voiceSelect.dataset.hudInitialized = "";
+                voiceSelect.style.display = '';
+                if (window.agEngine) window.agEngine.autoTheme();
+            }
+        },
+
+        init: function() {
+            // Bind listeners
+            document.getElementById('modelDropdown').addEventListener('change', () => this.updateUI());
+            document.getElementById('hud-modelDropdown')?.addEventListener('hud-change', () => this.updateUI());
+
+            document.getElementById('voice-submit-btn').addEventListener('click', async () => {
+                const text = document.getElementById('text').value;
+                const model = document.getElementById('modelDropdown').value;
+                const voice = document.getElementById('voiceDropdown').value;
+                const context = document.getElementById('context').value;
+                
+                const btn = document.getElementById('voice-submit-btn');
+                const progress = document.getElementById('voice-progress-container');
+                const bar = document.getElementById('voice-status-bar');
+                const fill = document.getElementById('voice-status-fill');
+                const statusText = document.getElementById('voice-status-text');
+                const resultArea = document.getElementById('voice-result-area');
+                const player = document.getElementById('audioPlayer');
+
+                if (!text.trim()) return alert('PLEASE ENTER TEXT!');
+
+                btn.disabled = true;
+                progress.style.display = 'flex';
+                bar.style.display = 'block';
+                fill.style.width = '20%';
+                statusText.innerText = "INITIALIZING SYNTHESIS...";
+                resultArea.style.display = 'none';
+
+                try {
+                    fill.style.width = '60%';
+                    statusText.innerText = "SENDING TO ENGINE...";
+                    
+                    const response = await fetch('/api/tts/synthesize', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text, model, voice, context })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        fill.style.width = '100%';
+                        statusText.innerText = "SYNTHESIS SUCCESSFUL!";
+                        player.src = data.audio_url;
+                        resultArea.style.display = 'block';
+                        player.play();
+                    } else {
+                        alert('ERROR: ' + (data.detail || 'UNKNOWN ENGINE ERROR'));
+                        statusText.innerText = "SYNTHESIS FAILED.";
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert('CRITICAL COMMUNICATION ERROR.');
+                    statusText.innerText = "LINK LOST.";
+                } finally {
+                    btn.disabled = false;
+                    setTimeout(() => {
+                        bar.style.display = 'none';
+                        fill.style.width = '0%';
+                    }, 2000);
+                }
+            });
+        }
+    };
+
+    // Auto-init on load
+    window.voiceEngine.init();
+</script>

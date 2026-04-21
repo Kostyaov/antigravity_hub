@@ -1,0 +1,246 @@
+<style>
+    .pdf-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        color: var(--text);
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .pdf-section {
+        background: rgba(255, 140, 0, 0.02);
+        border: 1px solid var(--hud-border);
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .pdf-canvas-area {
+        background: #000;
+        border: 1px solid var(--hud-border);
+        display: flex;
+        flex-direction: column;
+        min-height: 400px;
+    }
+
+    /* Canvas Handling */
+    #pdf-mask-editor {
+        display: none;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #pdf-canvas-wrapper {
+        position: relative;
+        flex-grow: 1;
+        overflow: auto;
+        display: flex;
+        justify-content: center;
+        background: #111;
+        padding: 20px;
+    }
+
+    #pdf-canvas-wrapper canvas {
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    .selection-canvas {
+        position: absolute;
+        top: 20px;
+        z-index: 10;
+        cursor: crosshair;
+    }
+
+    /* HUD Components */
+    .ag-field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .ag-field label {
+        font-size: 0.7rem;
+        color: var(--primary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .file-input-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid var(--hud-border);
+        padding: 5px 10px;
+    }
+
+    .file-name-hint {
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+    }
+    .ag-select, .ag-input {
+        background: #000;
+        border: 1px solid var(--hud-border);
+        color: #fff;
+        padding: 10px;
+        outline: none;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.85rem;
+    }
+
+    .ag-select:focus, .ag-input:focus {
+        border-color: var(--primary);
+    }
+
+    /* Processing UI */
+    #pdf-progress-bar {
+        height: 4px;
+        background: rgba(255, 140, 0, 0.1);
+        display: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    #pdf-progress-fill {
+        height: 100%;
+        background: var(--primary);
+        width: 0%;
+        box-shadow: 0 0 10px var(--primary);
+        transition: width 0.3s;
+    }
+
+    #pdf-status {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.75rem;
+        color: var(--primary);
+    }
+
+    /* Downloads */
+    #pdf-downloads-area {
+        display: none;
+        gap: 10px;
+        padding: 15px;
+        border-top: 1px dashed var(--hud-border);
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .btn-download {
+        min-width: 180px;
+    }
+
+    /* Preview Grid */
+    #pdf-preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .pdf-preview-item {
+        padding: 5px;
+        text-align: center;
+        font-size: 0.65rem;
+    }
+
+    .pdf-preview-item img {
+        width: 100%;
+        margin-bottom: 5px;
+        border-bottom: 1px solid var(--hud-border);
+    }
+
+    .editor-toolbar {
+        background: rgba(255, 140, 0, 0.05);
+        padding: 10px 15px;
+        border-bottom: 1px solid var(--hud-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+</style>
+
+<!-- EXTERNAL LIBRARIES -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
+
+<div class="pdf-container">
+    <!-- STEP 0: FILE -->
+    <div class="pdf-section">
+        <div class="ag-field" style="flex-direction: row; align-items: center; gap: 15px;">
+            <label style="margin-bottom: 0; width: 150px; flex-shrink: 0;">Input Document</label>
+            <div class="file-input-wrapper" style="flex-grow: 1; border: none; background: transparent; padding: 0; gap: 10px;">
+                <button class="btn btn-small" style="padding: 8px 20px; width: 140px; flex-shrink: 0;" onclick="document.getElementById('pdf-file-input').click()">UPLOAD</button>
+                <div class="ag-input" id="pdf-file-name" style="flex-grow: 1; min-height: 36px; display: flex; align-items: center; padding: 0 15px; font-size: 0.75rem; color: var(--primary); text-transform: uppercase;">NO FILE SELECTED</div>
+                <input type="file" id="pdf-file-input" accept="application/pdf" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 1 & 2: EDITOR -->
+    <div id="pdf-mask-editor" class="pdf-section" style="display: none;">
+        <div class="editor-toolbar">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 0.75rem; font-weight: bold; color: var(--primary);">1. SELECT MASK AREA</span>
+                <button class="btn btn-small" onclick="window.pdfMagic.resetMask()" style="font-size: 0.6rem; padding: 4px 8px;">RESET</button>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 0.75rem; font-weight: bold; color: var(--primary);">2. FILL MODE</span>
+                <select id="pdf-fill-mode" class="ag-select" style="padding: 4px 8px;">
+                    <option value="white">PURE WHITE</option>
+                    <option value="left">ADAPTIVE (LEFT)</option>
+                    <option value="right">ADAPTIVE (RIGHT)</option>
+                    <option value="top">ADAPTIVE (TOP)</option>
+                    <option value="bottom">ADAPTIVE (BOTTOM)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="pdf-canvas-area">
+            <div id="pdf-canvas-wrapper"></div>
+        </div>
+    </div>
+
+    <!-- STEP 3: QUALITY & START -->
+    <div class="pdf-section" style="flex-direction: row; align-items: center; gap: 20px;">
+        <div class="ag-field" style="flex-direction: row; align-items: center; gap: 10px;">
+            <label style="margin-bottom: 0;">Quality:</label>
+            <select id="pdf-scale-select" class="ag-select" style="padding: 4px 8px;">
+                <option value="1.5">1.5x (Medium)</option>
+                <option value="2" selected>2.0x (High)</option>
+                <option value="3">3.0x (Print)</option>
+            </select>
+        </div>
+        <button id="pdf-convert-btn" class="btn" disabled style="padding: 10px 25px;">🚀 START PROCESSING</button>
+    </div>
+
+    <!-- PROGRESS & STATUS -->
+    <div class="pdf-section" style="gap: 5px;">
+        <div id="pdf-progress-bar"><div id="pdf-progress-fill"></div></div>
+        <div id="pdf-status" style="text-align: center;">IDLE. AWAITING INPUT.</div>
+    </div>
+
+    <!-- DOWNLOADS -->
+    <div id="pdf-downloads-area" class="pdf-section">
+        <h3 style="margin: 0 0 10px 0; font-size: 0.8rem; width: 100%; text-align: center; color: var(--primary);">DOWNLOAD RESULTS:</h3>
+        <button id="pdf-btn-zip" class="btn btn-download">ZIP ARCHIVE</button>
+        <button id="pdf-btn-pdf" class="btn btn-download">CLEAN PDF</button>
+        <button id="pdf-btn-pptx" class="btn btn-download">PPTX DECK</button>
+    </div>
+
+    <!-- PREVIEW AREA -->
+    <div id="pdf-preview-grid">
+        <!-- Dynamic Preview Items -->
+    </div>
+</div>

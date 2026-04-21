@@ -1,0 +1,9 @@
+{
+    "id": "pdf",
+    "name": "PDF",
+    "description": "Smart PDF editor & HD converter.",
+    "has_backend": false,
+    "html_entry": "ui.html",
+    "js_entry": "js/pdf_logic.js",
+    "order": 4
+}

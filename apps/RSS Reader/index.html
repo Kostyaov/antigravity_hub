@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyRSS - Особистий RSS Рідер</title>
+    
+    <!-- Підключаємо Tailwind CSS для стилів -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Підключаємо React та ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel для компіляції JSX прямо в браузері -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        /* Анімації для модальних вікон */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .animate-in { animation: fadeIn 0.2s ease-out; }
+        .zoom-in { animation: slideIn 0.2s ease-out; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Іконки (SVG paths) ---
+        // Ми використовуємо inline SVG, щоб не залежати від зовнішніх бібліотек іконок
+        const Icons = {
+            Plus: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
+            Trash2: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-1 1-1h6c1 0 1 1 1 1v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>,
+            ExternalLink: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>,
+            Rss: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>,
+            LayoutGrid: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>,
+            List: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>,
+            Search: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+            Menu: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>,
+            X: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
+            Youtube: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>,
+            Newspaper: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>,
+            RefreshCw: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>,
+            Clock: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+            AlertCircle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>,
+            Download: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
+            Upload: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>,
+        };
+
+        // --- UI Компоненти ---
+
+        const Button = ({ children, onClick, variant = 'primary', className = '', ...props }) => {
+            const baseStyle = "px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 justify-center disabled:opacity-50 disabled:cursor-not-allowed";
+            const variants = {
+                primary: "bg-orange-600 hover:bg-orange-700 text-white shadow-md shadow-orange-500/20",
+                secondary: "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700",
+                danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200",
+                ghost: "text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/50"
+            };
+            return (
+                <button className={`${baseStyle} ${variants[variant]} ${className}`} onClick={onClick} {...props}>
+                    {children}
+                </button>
+            );
+        };
+
+        const Card = ({ children, className = '' }) => (
+            <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden ${className}`}>
+                {children}
+            </div>
+        );
+
+        const Input = ({ ...props }) => (
+            <input className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all" {...props} />
+        );
+
+        const Badge = ({ children, color = 'blue' }) => {
+            const colors = {
+                blue: 'bg-blue-50 text-blue-700 border-blue-100',
+                orange: 'bg-orange-50 text-orange-700 border-orange-100',
+                gray: 'bg-gray-100 text-gray-600 border-gray-200',
+                red: 'bg-red-50 text-red-600 border-red-100'
+            };
+            return (
+                <span className={`text-xs px-2 py-0.5 rounded-full border ${colors[color] || colors.gray}`}>
+                    {children}
+                </span>
+            );
+        };
+
+        // --- Основний додаток ---
+
+        function App() {
+            // Стан
+            const [feeds, setFeeds] = useState(() => {
+                const saved = localStorage.getItem('my_rss_feeds');
+                return saved ? JSON.parse(saved) : [
+                    { id: '1', title: 'The Verge', url: 'https://www.theverge.com/rss/index.xml', icon: 'news' },
+                    { id: '2', title: 'Hacker News', url: 'https://news.ycombinator.com/rss', icon: 'code' }
+                ];
+            });
+            
+            const [activeFeedId, setActiveFeedId] = useState('all');
+            const [articles, setArticles] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [loadingStatus, setLoadingStatus] = useState('');
+            const [viewMode, setViewMode] = useState('grid');
+            const [showAddModal, setShowAddModal] = useState(false);
+            const [newUrl, setNewUrl] = useState('');
+            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+            const [errorMsg, setErrorMsg] = useState('');
+
+            useEffect(() => {
+                localStorage.setItem('my_rss_feeds', JSON.stringify(feeds));
+            }, [feeds]);
+
+            // Функції імпорту/експорту
+            const handleExport = () => {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(feeds));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", "my_rss_feeds.json");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            };
+
+            const handleImport = (event) => {
+                const fileObj = event.target.files && event.target.files[0];
+                if (!fileObj) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedFeeds = JSON.parse(e.target.result);
+                        if (Array.isArray(importedFeeds)) {
+                            // Фільтруємо дублікати за URL
+                            const currentUrls = new Set(feeds.map(f => f.url));
+                            const newFeeds = importedFeeds.filter(f => !currentUrls.has(f.url));
+                            
+                            if (newFeeds.length > 0) {
+                                setFeeds(prev => [...prev, ...newFeeds]);
+                                alert(`Успішно імпортовано ${newFeeds.length} нових каналів.`);
+                            } else {
+                                alert('Всі канали з файлу вже існують у вашому списку.');
+                            }
+                        } else {
+                            alert('Невірний формат файлу. Очікується список каналів.');
+                        }
+                    } catch (error) {
+                        console.error("Import error:", error);
+                        alert('Помилка читання файлу. Переконайтеся, що це коректний JSON.');
+                    }
+                };
+                reader.readAsText(fileObj);
+                event.target.value = null; // Скидаємо input, щоб можна було імпортувати той самий файл знову
+            };
+
+            // Функція для отримання RSS
+            const fetchFeed = async (feedUrl) => {
+                try {
+                    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`);
+                    const data = await res.json();
+                    if (data.status === 'ok') {
+                        return data.items.map(item => ({
+                            ...item,
+                            feedTitle: data.feed.title,
+                            feedUrl: feedUrl,
+                            id: item.guid || item.link,
+                            pubDate: new Date(item.pubDate),
+                            thumbnail: item.thumbnail || item.enclosure?.link || extractImageFromContent(item.content)
+                        }));
+                    }
+                    return [];
+                } catch (error) {
+                    console.error("Помилка завантаження фіда:", error);
+                    return [];
+                }
+            };
+
+            const extractImageFromContent = (content) => {
+                if (!content) return null;
+                const div = document.createElement('div');
+                div.innerHTML = content;
+                const img = div.querySelector('img');
+                return img ? img.src : null;
+            };
+
+            useEffect(() => {
+                const loadArticles = async () => {
+                    setLoading(true);
+                    let allItems = [];
+
+                    if (activeFeedId === 'all') {
+                        const promises = feeds.map(feed => fetchFeed(feed.url));
+                        const results = await Promise.all(promises);
+                        allItems = results.flat();
+                    } else {
+                        const feed = feeds.find(f => f.id === activeFeedId);
+                        if (feed) {
+                            allItems = await fetchFeed(feed.url);
+                        }
+                    }
+
+                    allItems.sort((a, b) => b.pubDate - a.pubDate);
+                    setArticles(allItems);
+                    setLoading(false);
+                };
+
+                loadArticles();
+            }, [activeFeedId, feeds]);
+
+            // --- Логіка пошуку YouTube ID ---
+            const findYoutubeId = async (url) => {
+                setLoadingStatus('Сканування сторінки...');
+                
+                const proxies = [
+                    `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+                    `https://corsproxy.io/?${encodeURIComponent(url)}`
+                ];
+
+                for (const proxyUrl of proxies) {
+                    try {
+                        console.log(`Пробуємо проксі: ${proxyUrl}`);
+                        const response = await fetch(proxyUrl);
+                        let html = '';
+
+                        if (proxyUrl.includes('allorigins')) {
+                            const json = await response.json();
+                            html = json.contents;
+                        } else {
+                            html = await response.text();
+                        }
+
+                        if (!html) continue;
+
+                        const browseMatch = html.match(/"browseId":"(UC[\w-]{21,24})"/);
+                        if (browseMatch && browseMatch[1]) return browseMatch[1];
+
+                        const channelMatch = html.match(/"channelId":"(UC[\w-]{21,24})"/);
+                        if (channelMatch && channelMatch[1]) return channelMatch[1];
+                        
+                        const canonicalMatch = html.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/channel\/(UC[\w-]{21,24})">/);
+                        if (canonicalMatch && canonicalMatch[1]) return canonicalMatch[1];
+
+                    } catch (err) {
+                        console.warn('Проксі не спрацював, пробуємо наступний...', err);
+                    }
+                }
+                return null;
+            };
+
+            const handleAddFeed = async () => {
+                setLoading(true);
+                setLoadingStatus('Перевірка посилання...');
+                setErrorMsg('');
+                
+                let finalUrl = newUrl.trim();
+                if (!finalUrl.startsWith('http')) finalUrl = 'https://' + finalUrl;
+
+                try {
+                    if (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be')) {
+                        const isDirectRss = finalUrl.includes('feeds/videos.xml');
+                        const isChannelIdLink = finalUrl.includes('/channel/UC');
+
+                        if (!isDirectRss && !isChannelIdLink) {
+                            const foundId = await findYoutubeId(finalUrl);
+                            
+                            if (foundId) {
+                                finalUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${foundId}`;
+                            } else {
+                                throw new Error('Не вдалося знайти ID каналу автоматично. Спробуйте посилання на вкладку /videos.');
+                            }
+                        } else if (isChannelIdLink) {
+                            const parts = finalUrl.split('/channel/');
+                            if (parts[1]) {
+                                const id = parts[1].split('/')[0].split('?')[0];
+                                finalUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`;
+                            }
+                        }
+                    } else if (finalUrl.includes('reddit.com')) {
+                        if (!finalUrl.endsWith('.rss')) {
+                            finalUrl = finalUrl.replace(/\/$/, '') + '.rss';
+                        }
+                    }
+
+                    setLoadingStatus('Отримання новин...');
+                    
+                    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(finalUrl)}`);
+                    const data = await res.json();
+                    
+                    if (data.status === 'ok') {
+                        const newFeed = {
+                            id: Date.now().toString(),
+                            title: data.feed.title || 'Новий канал',
+                            url: finalUrl,
+                            icon: finalUrl.includes('youtube') ? 'youtube' : 'news'
+                        };
+                        setFeeds([...feeds, newFeed]);
+                        setNewUrl('');
+                        setShowAddModal(false);
+                        setActiveFeedId(newFeed.id);
+                    } else {
+                        setErrorMsg('Невірне посилання або закритий канал.');
+                    }
+                } catch (err) {
+                    setErrorMsg(err.message || 'Помилка мережі.');
+                } finally {
+                    setLoading(false);
+                    setLoadingStatus('');
+                }
+            };
+
+            const deleteFeed = (e, id) => {
+                e.stopPropagation();
+                if (window.confirm('Видалити цей канал?')) {
+                    setFeeds(feeds.filter(f => f.id !== id));
+                    if (activeFeedId === id) setActiveFeedId('all');
+                }
+            };
+
+            const formatDate = (dateObj) => {
+                if (!dateObj) return '';
+                const now = new Date();
+                const diff = (now - dateObj) / 1000;
+
+                if (diff < 60) return 'Тільки що';
+                if (diff < 3600) return `${Math.floor(diff / 60)} хв. тому`;
+                if (diff < 86400) return `${Math.floor(diff / 3600)} год. тому`;
+                return dateObj.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' });
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans flex flex-col md:flex-row">
+                    
+                    {/* Mobile Header */}
+                    <div className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-20">
+                        <div className="flex items-center gap-2 font-bold text-xl text-orange-600">
+                            <Icons.Rss size={24} />
+                            <span>MyRSS</span>
+                        </div>
+                        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2">
+                            {mobileMenuOpen ? <Icons.X /> : <Icons.Menu />}
+                        </button>
+                    </div>
+
+                    {/* Sidebar */}
+                    <aside className={`
+                        fixed md:sticky top-0 h-screen z-10 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-shrink-0 flex flex-col transition-transform duration-300
+                        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+                    `}>
+                        <div className="p-6 hidden md:flex items-center gap-2 font-bold text-2xl text-orange-600">
+                            <div className="bg-orange-100 p-2 rounded-lg">
+                                <Icons.Rss className="text-orange-600" size={24} />
+                            </div>
+                            <span>MyRSS</span>
+                        </div>
+
+                        <div className="px-4 mb-4">
+                        <Button onClick={() => setShowAddModal(true)} className="w-full justify-start">
+                            <Icons.Plus size={18} />
+                            <span>Додати джерело</span>
+                        </Button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto px-2 space-y-1">
+                            <div 
+                                onClick={() => { setActiveFeedId('all'); setMobileMenuOpen(false); }}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-colors ${activeFeedId === 'all' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                            >
+                                <Icons.LayoutGrid size={18} />
+                                <span className="font-medium">Всі новини</span>
+                            </div>
+                            
+                            <div className="px-4 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                Мої канали
+                            </div>
+                            
+                            {feeds.map(feed => (
+                                <div 
+                                    key={feed.id}
+                                    onClick={() => { setActiveFeedId(feed.id); setMobileMenuOpen(false); }}
+                                    className={`group flex items-center justify-between px-4 py-2.5 rounded-lg cursor-pointer transition-colors ${activeFeedId === feed.id ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                                >
+                                    <div className="flex items-center gap-3 overflow-hidden">
+                                        {feed.icon === 'youtube' ? <Icons.Youtube size={16} className="text-red-500" /> : <Icons.Newspaper size={16} className="text-gray-400" />}
+                                        <span className="truncate text-sm">{feed.title}</span>
+                                    </div>
+                                    <button 
+                                        onClick={(e) => deleteFeed(e, feed.id)}
+                                        className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-opacity"
+                                    >
+                                        <Icons.Trash2 size={14} />
+                                    </button>
+                                </div>
+                            ))}
+
+                            {feeds.length === 0 && (
+                                <div className="px-4 py-8 text-center text-sm text-gray-500">
+                                    Список порожній. Додайте свій перший канал!
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Секція Імпорту та Експорту */}
+                        <div className="px-4 mt-auto mb-2 pt-4 border-t border-gray-100 dark:border-gray-700">
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Дані</p>
+                            <div className="flex flex-col gap-2">
+                                <Button variant="secondary" onClick={handleExport} className="w-full text-xs px-2 py-1.5 h-auto" title="Зберегти в файл">
+                                    <Icons.Download size={14} /> Експорт
+                                </Button>
+                                <Button variant="secondary" onClick={() => document.getElementById('import-input').click()} className="w-full text-xs px-2 py-1.5 h-auto" title="Відновити з файлу">
+                                    <Icons.Upload size={14} /> Імпорт
+                                </Button>
+                            </div>
+                            <input 
+                                id="import-input" 
+                                type="file" 
+                                accept=".json" 
+                                className="hidden" 
+                                onChange={handleImport}
+                            />
+                        </div>
+
+                        <div className="p-4 border-t dark:border-gray-700 text-xs text-center text-gray-400">
+                            Особистий RSS Рідер v2.4
+                        </div>
+                    </aside>
+
+                    {/* Main Content */}
+                    <main className="flex-1 w-full max-w-7xl mx-auto p-4 md:p-8">
+                        {/* Header */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    {activeFeedId === 'all' ? 'Головна стрічка' : feeds.find(f => f.id === activeFeedId)?.title}
+                                    {loading && <Icons.RefreshCw className="animate-spin text-orange-500" size={20} />}
+                                </h1>
+                                <p className="text-gray-500 text-sm mt-1">
+                                    {activeFeedId === 'all' 
+                                        ? 'Останні оновлення з усіх ваших джерел' 
+                                        : 'Новини обраного каналу'}
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1 rounded-lg border dark:border-gray-700 shadow-sm self-start">
+                                <button 
+                                    onClick={() => setViewMode('grid')}
+                                    className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-100 dark:bg-gray-700 text-orange-600' : 'text-gray-400'}`}
+                                >
+                                    <Icons.LayoutGrid size={20} />
+                                </button>
+                                <button 
+                                    onClick={() => setViewMode('list')}
+                                    className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-100 dark:bg-gray-700 text-orange-600' : 'text-gray-400'}`}
+                                >
+                                    <Icons.List size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Content Area */}
+                        {articles.length === 0 && !loading ? (
+                            <div className="flex flex-col items-center justify-center py-20 text-center">
+                                <div className="bg-orange-50 dark:bg-orange-900/20 p-6 rounded-full mb-4">
+                                    <Icons.Rss size={48} className="text-orange-500" />
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Немає новин</h3>
+                                <p className="text-gray-500 max-w-md mb-6">
+                                    Схоже, в обраних каналах немає свіжих новин або ви ще не додали жодного джерела.
+                                </p>
+                                <Button onClick={() => setShowAddModal(true)}>Додати джерело</Button>
+                            </div>
+                        ) : (
+                            <div className={
+                                viewMode === 'grid' 
+                                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
+                                : "flex flex-col gap-4 max-w-4xl mx-auto"
+                            }>
+                                {articles.map((article) => (
+                                    <Card key={`${article.id}-${Math.random()}`} className={`group hover:shadow-md transition-shadow flex ${viewMode === 'list' ? 'flex-row h-32 md:h-40' : 'flex-col h-full'}`}>
+                                        {/* Image */}
+                                        {article.thumbnail && (
+                                            <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-1/3 md:w-48 shrink-0' : 'h-48 w-full'}`}>
+                                                <img 
+                                                    src={article.thumbnail} 
+                                                    alt="" 
+                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                    onError={(e) => e.target.style.display = 'none'} 
+                                                />
+                                            </div>
+                                        )}
+                                        
+                                        {/* Text Content */}
+                                        <div className="p-4 flex flex-col flex-1 justify-between">
+                                            <div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        {activeFeedId === 'all' && (
+                                                            <Badge color="blue">{article.feedTitle}</Badge>
+                                                        )}
+                                                        <div className="text-xs text-gray-400 flex items-center gap-1">
+                                                            <Icons.Clock size={12} />
+                                                            {formatDate(article.pubDate)}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <a 
+                                                    href={article.link} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="font-bold text-gray-800 dark:text-gray-100 hover:text-orange-600 dark:hover:text-orange-400 transition-colors line-clamp-2 mb-2 block"
+                                                >
+                                                    {article.title}
+                                                </a>
+                                                
+                                                {viewMode === 'grid' && (
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-3" dangerouslySetInnerHTML={{__html: article.description?.replace(/<[^>]+>/g, '')}} />
+                                                )}
+                                            </div>
+
+                                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                                                <a 
+                                                    href={article.link} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="text-sm font-medium text-orange-600 flex items-center gap-1 hover:gap-2 transition-all"
+                                                >
+                                                    Читати далі <Icons.ExternalLink size={14} />
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </main>
+
+                    {/* Add Feed Modal */}
+                    {showAddModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-bold">Додати джерело</h2>
+                                    <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600"><Icons.X /></button>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Посилання на сайт або RSS</label>
+                                        <div className="relative">
+                                            <Input 
+                                                placeholder="напр. https://www.youtube.com/@PatrickStirling/videos" 
+                                                value={newUrl}
+                                                onChange={(e) => setNewUrl(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleAddFeed()}
+                                            />
+                                            <Icons.Search className="absolute right-3 top-2.5 text-gray-400" size={18} />
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-2">
+                                            Для кращого результату з YouTube додавайте посилання на вкладку <b>/videos</b>.
+                                        </p>
+                                    </div>
+
+                                    {errorMsg && (
+                                        <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg flex items-start gap-2">
+                                            <Icons.AlertCircle size={16} className="mt-0.5 shrink-0" />
+                                            <div>
+                                                <p className="font-bold">Помилка</p>
+                                                <p>{errorMsg}</p>
+                                                {errorMsg.includes('захищається') && (
+                                                    <p className="mt-2 text-xs text-gray-700 dark:text-gray-300">
+                                                        Спробуйте знайти ID вручну (View Source &rarr; пошук "browseId") і вставити: <br/>
+                                                        <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">youtube.com/channel/UC...</code>
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end gap-2 mt-6">
+                                        <Button variant="secondary" onClick={() => setShowAddModal(false)}>Скасувати</Button>
+                                        <Button onClick={handleAddFeed} disabled={loading}>
+                                            {loading ? (loadingStatus || 'Пошук...') : 'Додати'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

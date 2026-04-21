@@ -1,0 +1,9 @@
+{
+    "id": "voice",
+    "name": "Gemini Voice",
+    "description": "Premium Text-to-Speech with Edge & Gemini AI.",
+    "has_backend": true,
+    "backend_entry": "router.py",
+    "html_entry": "ui.html",
+    "order": 1
+}

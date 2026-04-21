@@ -1,0 +1,18 @@
+# Core Framework
+fastapi
+uvicorn
+jinja2
+pydantic
+python-multipart
+websockets
+
+# Gemini TTS Module
+google-genai
+python-dotenv
+pydub
+edge-tts
+
+# WEB-DLP Module
+yt-dlp
+curl-cffi
+requests

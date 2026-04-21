@@ -1,0 +1,7 @@
+google-genai
+python-dotenv
+pydub
+fastapi
+uvicorn
+edge-tts
+python-multipart

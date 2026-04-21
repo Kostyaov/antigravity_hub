@@ -1,0 +1,9 @@
+{
+    "id": "rss",
+    "name": "MY RSS",
+    "description": "YouTube & RSS aggregator.",
+    "has_backend": false,
+    "html_entry": "ui.html",
+    "js_entry": "js/logic.js",
+    "order": 3
+}

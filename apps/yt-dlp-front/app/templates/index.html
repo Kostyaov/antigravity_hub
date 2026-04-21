@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web-DLP</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Web-DLP</h1>
+            <button id="updateBtn" class="secondary-btn row-btn" style="padding: 8px 16px; font-size: 0.9rem; margin-top: 10px;">Yt-dlp Update</button>
+        </header>
+
+        <main>
+            <!-- Розділ Завантажувача у вигляді єдиного рядка -->
+            <div id="downloadSection" class="section-content active">
+                <div class="input-row">
+                    <input type="url" id="videoUrl" placeholder="Paste YouTube link..." required class="flex-grow">
+
+                    <select id="formatSelect" class="row-item" style="width: auto; min-width: 115px; cursor: pointer;">
+                        <option value="mp3">mp3</option>
+                        <option value="original_audio">Original Audio</option>
+                        <option value="480">480p</option>
+                        <option value="720">720p</option>
+                        <option value="1080" selected>1080p</option>
+                        <option value="2k">2k</option>
+                        <option value="MAX">MAX</option>
+                    </select>
+
+                    <div id="audioOption" class="checkbox-wrapper row-item">
+                        <label style="cursor: pointer;">
+                            <input type="checkbox" id="includeAudio" checked>
+                            Audio
+                        </label>
+                    </div>
+
+                    <div id="subtitlesOption" class="checkbox-wrapper row-item">
+                        <label style="cursor: pointer;">
+                            <input type="checkbox" id="includeSubtitles">
+                            Subtitles
+                        </label>
+                    </div>
+
+                    <button id="downloadBtn" class="primary-btn row-btn">Download</button>
+                </div>
+            </div>
+
+            <!-- Розділ FFMPEG -->
+            <div id="ffmpegSection" class="section-content active" style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 25px;">
+                <div class="input-row" style="margin-bottom: 0; align-items: flex-end;">
+                    <div class="input-wrapper flex-grow">
+                        <label for="filePicker1" style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 5px; display: block;">Video</label>
+                        <select id="filePicker1" style="width: 100%;">
+                            <option value="">Original Video from Downloads...</option>
+                        </select>
+                    </div>
+
+                    <div class="input-wrapper flex-grow">
+                        <label for="filePicker2" style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 5px; display: block;">Audio</label>
+                        <select id="filePicker2" style="width: 100%;">
+                            <option value="">Audio to Replace With...</option>
+                        </select>
+                    </div>
+
+                    <button id="refreshFilesBtn" class="secondary-btn row-btn icon-btn" title="Refresh External Files">⟳</button>
+                    <button id="replaceAudioBtn" class="primary-btn row-btn">Replace</button>
+                </div>
+            </div>
+
+            <!-- Спільний прогрес -->
+            <div id="progressContainer" class="progress-container hidden">
+                <div class="progress-info">
+                    <span id="speedTxt">Speed: 0MiB/s</span>
+                    <span id="etaTxt">ETA: 00:00</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="progressBar" class="progress-bar-fill" style="width: 0%"></div>
+                </div>
+                <div class="progress-text" id="progressTxt">0%</div>
+            </div>
+
+            <div class="console-wrapper">
+                <h3>Console Output</h3>
+                <div id="consoleOutput" class="console-output"></div>
+            </div>
+
+            <div id="downloadLinkContainer" class="download-link-container hidden">
+                <h3>Process Complete!</h3>
+                <button id="openFolderBtn" class="primary-btn" style="background-color: var(--success-color);">Open Downloads Folder</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+
+</html>

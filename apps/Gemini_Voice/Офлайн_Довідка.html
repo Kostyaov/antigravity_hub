@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini TTS | Emergency Protocols (V4.0)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ff8c00;
+            --bg: #050505;
+            --card-bg: rgba(10, 10, 10, 0.95);
+            --text: #ffcc80;
+            --hud-border: rgba(255, 140, 0, 0.3);
+        }
+
+        body {
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at center, #1a1000 0%, transparent 80%);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        /* Scanlines */
+        body::after {
+            content: ""; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(255, 140, 0, 0.02) 50%);
+            background-size: 100% 4px; pointer-events: none; z-index: 10;
+        }
+
+        .container {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 650px;
+            border: 1px solid var(--hud-border);
+            border-left: 5px solid var(--primary);
+            padding: 40px;
+            position: relative;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 1);
+            clip-path: polygon(0% 0%, 95% 0%, 100% 5%, 100% 100%, 5% 100%, 0% 95%);
+        }
+
+        .title { 
+            font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 600; 
+            margin-bottom: 30px; color: var(--primary); text-transform: uppercase;
+            letter-spacing: 3px; border-bottom: 2px solid var(--hud-border); padding-bottom: 15px;
+        }
+
+        .module {
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid var(--hud-border);
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .module-label { color: var(--primary); font-weight: 700; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 10px; display: block; }
+        .module-desc { font-size: 0.85rem; color: #ccaa80; line-height: 1.6; margin-bottom: 15px; display: block; }
+
+        .command-box {
+            background: #000;
+            border: 1px solid var(--primary);
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .command-text {
+            color: #4ade80;
+            font-size: 0.8rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-grow: 1;
+        }
+
+        .copy-btn {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 8px 15px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover { background: #ffae42; box-shadow: 0 0 15px var(--primary); }
+        .copy-btn.success { background: #4ade80; }
+
+        .footer { margin-top: 30px; font-size: 0.75rem; color: var(--hud-border); text-align: right; text-transform: uppercase; letter-spacing: 1px; }
+        
+        a { color: var(--primary); text-decoration: none; border-bottom: 1px solid var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">EMERGENCY_START_V4.0</div>
+        
+        <div class="module">
+            <span class="module-label">PROTOCOL_01: QUICK EXECUTION</span>
+            <span class="module-desc">Знайдіть папку проекту у вашому файловому менеджері та запустіть відповідний сценарій розгортання:</span>
+            <div style="font-weight: bold; color: #fff; font-size: 0.9rem;">
+                > Start_Gemini_TTS.command (macOS)<br>
+                > Start_Gemini_TTS_Win.bat (Windows)
+            </div>
+        </div>
+
+        <div class="module">
+            <span class="module-label">PROTOCOL_02: MANUAL TERMINAL OVERRIDE</span>
+            <span class="module-desc">Якщо автоматичний запуск не спрацював, скопіюйте цю команду та виконайте її в Терміналі:</span>
+            <div class="command-box">
+                <div class="command-text" id="cmdText">cd "INITIALIZING..." && ./Start_Gemini_TTS.command</div>
+                <button class="copy-btn" id="copyBtn">COPY</button>
+            </div>
+        </div>
+
+        <div class="module" style="border-color: var(--primary);">
+            <span class="module-label">STABLE_V4_FEATURES</span>
+            <span class="module-desc">
+                • <b>Cyber-HUD Interface</b> активовано.<br>
+                • Підтримка <b>8 преміальних голосів</b> Gemini.<br>
+                • Система <b>Audio Steering</b> готова до роботи.
+            </span>
+        </div>
+
+        <div class="footer">
+            SYSTEM_ACCESS: <a href="http://localhost:8000">HTTP://LOCALHOST:8000</a>
+        </div>
+    </div>
+
+    <script>
+        let projectPath = window.location.pathname;
+        const directoryPath = projectPath.substring(0, projectPath.lastIndexOf('/'));
+        const finalPath = decodeURI(directoryPath);
+        
+        const cmdText = document.getElementById('cmdText');
+        cmdText.innerText = `cd "${finalPath}" && ./Start_Gemini_TTS.command`;
+
+        const copyBtn = document.getElementById('copyBtn');
+        copyBtn.onclick = () => {
+            navigator.clipboard.writeText(cmdText.innerText).then(() => {
+                copyBtn.innerText = 'COPIED!';
+                copyBtn.classList.add('success');
+                setTimeout(() => {
+                    copyBtn.innerText = 'COPY';
+                    copyBtn.classList.remove('success');
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

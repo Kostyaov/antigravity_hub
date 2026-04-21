@@ -1,0 +1,9 @@
+{
+    "id": "dlp",
+    "name": "WEB-dlp",
+    "description": "YouTube Downloader and Audio extractor",
+    "has_backend": true,
+    "backend_entry": "app/router.py",
+    "html_entry": "ui.html",
+    "order": 2
+}
