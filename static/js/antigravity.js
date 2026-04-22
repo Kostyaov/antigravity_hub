@@ -71,7 +71,7 @@ class AntigravityEngine {
         });
         
         // Auto-style plain buttons if they don't have btn class but are form buttons
-        const basicBtns = document.querySelectorAll('button:not(.btn):not(.tab-btn)');
+        const basicBtns = document.querySelectorAll('button:not(.btn):not(.tab-btn):not(.theme-btn):not(.modal-close)');
         basicBtns.forEach(btn => {
             if(btn.dataset.themeIgnored) return;
             btn.classList.add('btn');
@@ -134,7 +134,116 @@ class AntigravityEngine {
     }
 }
 
+class AntigravitySettings {
+    constructor() {
+        this.modal = document.getElementById('settingsModal');
+        this.btnOpen = document.getElementById('settingsBtn');
+        this.btnClose = document.getElementById('closeSettingsBtn');
+        this.themeBtns = document.querySelectorAll('.theme-btn');
+        this.langSelect = document.getElementById('langSelect');
+        
+        this.currentTheme = localStorage.getItem('ag_theme') || 'theme-amber';
+        this.currentLang = localStorage.getItem('ag_lang') || 'uk';
+        
+        this.translations = {
+            'uk': {
+                'app_title': 'Antigravity Hub',
+                'settings_title': 'НАЛАШТУВАННЯ',
+                'theme_label': 'Колірна Тема (HUD)',
+                'lang_label': 'Мова Інтерфейсу'
+            },
+            'en': {
+                'app_title': 'Antigravity Hub',
+                'settings_title': 'SETTINGS',
+                'theme_label': 'Color Theme (HUD)',
+                'lang_label': 'Interface Language'
+            }
+        };
+
+        this.init();
+    }
+
+    init() {
+        console.log("[*] Antigravity Settings Initializing...");
+        // Modal toggling
+        if (this.btnOpen) {
+            this.btnOpen.addEventListener('click', () => {
+                console.log("[*] Opening Settings Modal");
+                this.modal.classList.add('active');
+            });
+        }
+        
+        if (this.btnClose) {
+            this.btnClose.addEventListener('click', () => {
+                console.log("[*] Closing Settings Modal");
+                this.modal.classList.remove('active');
+            });
+        }
+        
+        // Close on overlay click
+        if (this.modal) {
+            this.modal.addEventListener('click', (e) => {
+                if (e.target === this.modal) this.modal.classList.remove('active');
+            });
+        }
+
+        // Theme initialization
+        this.setTheme(this.currentTheme);
+        this.themeBtns.forEach(btn => {
+            btn.addEventListener('click', () => this.setTheme(btn.dataset.theme));
+        });
+
+        // Language initialization
+        if (this.langSelect) {
+            this.langSelect.value = this.currentLang;
+            
+            // Listen to original select change
+            this.langSelect.addEventListener('change', (e) => {
+                this.setLanguage(e.target.value);
+            });
+            // Listen to HUD change
+            const hudId = `hud-${this.langSelect.id}`;
+            document.addEventListener('hud-change', (e) => {
+                if(e.detail.id === hudId) this.setLanguage(e.detail.value);
+            });
+        }
+        this.setLanguage(this.currentLang);
+    }
+
+    setTheme(themeClass) {
+        this.currentTheme = themeClass;
+        localStorage.setItem('ag_theme', themeClass);
+        
+        // Remove old themes
+        document.body.classList.remove('theme-amber', 'theme-cyan', 'theme-emerald');
+        document.body.classList.add(themeClass);
+
+        // Update active button state
+        this.themeBtns.forEach(btn => {
+            if (btn.dataset.theme === themeClass) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+    }
+
+    setLanguage(langCode) {
+        if (!this.translations[langCode]) return;
+        this.currentLang = langCode;
+        localStorage.setItem('ag_lang', langCode);
+        
+        const dict = this.translations[langCode];
+        
+        // Translate all elements with data-i18n attribute
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.dataset.i18n;
+            if (dict[key]) {
+                el.innerText = dict[key];
+            }
+        });
+    }
+}
+
 // Global initialization when the DOM is fully loaded or replaced
 document.addEventListener('DOMContentLoaded', () => {
     window.agEngine = new AntigravityEngine();
+    window.agSettings = new AntigravitySettings();
 });

@@ -6,13 +6,13 @@
     <title>Antigravity Hub</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <!-- Base styles Engine -->
-    <link rel="stylesheet" href="/static/css/antigravity.css">
+    <link rel="stylesheet" href="/static/css/antigravity.css?v=1.0.2">
 </head>
 <body>
 
     <div class="header">
-        <h1>Antigravity Hub</h1>
-        <div class="status">System: <span>ONLINE</span></div>
+        <h1 data-i18n="app_title">Antigravity Hub</h1>
+        <button id="settingsBtn" class="status-btn"><span data-i18n="settings_title">SETTINGS</span> <span class="status-icon">⚙️</span></button>
     </div>
 
     <div class="hub-container">
@@ -49,7 +49,36 @@
         {% endfor %}
     </div>
 
+    <!-- GLOBAL SETTINGS MODAL -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" id="closeSettingsBtn">X</button>
+            <h2 data-i18n="settings_title">Системні Налаштування</h2>
+            
+            <div class="settings-group">
+                <label data-i18n="theme_label">Колірна Тема (HUD)</label>
+                <div class="theme-selector">
+                    <button class="theme-btn active" data-theme="theme-amber"><span class="theme-color" style="background:#ff8c00;"></span> Amber</button>
+                    <button class="theme-btn" data-theme="theme-cyan"><span class="theme-color" style="background:#00e5ff;"></span> Cyan</button>
+                    <button class="theme-btn" data-theme="theme-emerald"><span class="theme-color" style="background:#00ff41;"></span> Emerald</button>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <label data-i18n="lang_label">Мова Інтерфейсу</label>
+                <select id="langSelect" class="ag-select">
+                    <option value="uk" selected>🇺🇦 Українська (UK)</option>
+                    <option value="en">🇬🇧 English (EN)</option>
+                </select>
+            </div>
+            
+            <div class="settings-footer">
+                <span class="version-tag">ANTIGRAVITY CORE v1.0.1</span>
+            </div>
+        </div>
+    </div>
+
     <!-- Core Autotheme Logic -->
-    <script src="/static/js/antigravity.js"></script>
+    <script src="/static/js/antigravity.js?v=1.0.2"></script>
 </body>
 </html>
